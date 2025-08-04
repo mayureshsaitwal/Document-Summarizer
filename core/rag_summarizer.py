@@ -18,49 +18,40 @@ class CustomEmbedding(Embeddings):
         self.tokenizer = tokenizer
 
     def embed_documents(self, texts):
-        # Tokenize the texts
         inputs = self.tokenizer(texts, padding=True, truncation=True, return_tensors="pt")
         inputs = {key: value.to(self.model.device) for key, value in inputs.items()}
         
-        # Get embeddings from the model
         with torch.no_grad():
-            embeddings = self.model(**inputs).last_hidden_state.mean(dim=1)  # Adjust as needed
+            embeddings = self.model(**inputs).last_hidden_state.mean(dim=1) 
 
-        # Convert to list of lists (make sure it's a list format)
-        embeddings_list = embeddings.cpu().numpy().tolist()  # Convert ndarray to list
-        return embeddings_list  # Return as list of embeddings (list of lists)
+        embeddings_list = embeddings.cpu().numpy().tolist()
+        return embeddings_list
 
     def embed_query(self, query):
-        # Embedding for a single query
         inputs = self.tokenizer(query, padding=True, truncation=True, return_tensors="pt")
         inputs = {key: value.to(self.model.device) for key, value in inputs.items()}
         
         with torch.no_grad():
             embeddings = self.model(**inputs).last_hidden_state.mean(dim=1)
         
-        # Convert to list (single embedding)
-        embedding_list = embeddings.cpu().numpy().tolist()  # Convert ndarray to list
-        return embedding_list  # Return as list
+        embedding_list = embeddings.cpu().numpy().tolist() 
+        return embedding_list
 
 
 class RAGSummarizer:
     def __init__(self, google_api_key, llm_model="gemini-2.0-flash"):
-        # Load the model and tokenizer manually with transformers
         model_name = "nomic-ai/nomic-embed-text-v2-moe"
         
-        # Manually load the model and tokenizer with the trust_remote_code argument
         self.model = AutoModel.from_pretrained(
             model_name,
-            trust_remote_code=True,  # Enable custom code execution
-            device_map="auto"  # Automatically use available device (GPU/CPU)
+            trust_remote_code=True,
+            device_map="auto"
         )
         
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
 
-        # Create the custom embeddings object
         self.embeddings = CustomEmbedding(self.model, self.tokenizer)
 
-        # Initialize Gemini LLM
         self.llm = ChatGoogleGenerativeAI(
             model=llm_model, google_api_key=google_api_key
         )
@@ -68,7 +59,6 @@ class RAGSummarizer:
 
     def _initialize_vector_db(self, chunks):
         """Initialize the vector database with document chunks and embeddings."""
-        # Pass the chunks and embeddings (which is now a list) to Chroma
         embeddings = self.embeddings.embed_documents(chunks)
         self.vector_db = Chroma.from_texts(chunks, embeddings)
 
@@ -76,7 +66,6 @@ class RAGSummarizer:
         document_processor = DocumentProcessor()
         chunks = document_processor.chunk_document(document_content)
 
-        # Initialize the vector DB with the chunks
         self._initialize_vector_db(chunks)
 
         if summarization_type == "Extractive":

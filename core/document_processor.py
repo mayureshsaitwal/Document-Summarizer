@@ -1,4 +1,3 @@
-# core/document_processor.py
 import os
 import io
 import docx
@@ -10,12 +9,9 @@ import streamlit as st
 
 class DocumentProcessor:
     def __init__(self, chunk_size=1000, chunk_overlap=200):
-        # Initialize the text splitter for breaking down documents into chunks
-        # Uses a recursive character text splitter which is adaptive to document structure
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=chunk_size, chunk_overlap=chunk_overlap
         )
-        # Set a seed for langdetect to ensure consistent results
         DetectorFactory.seed = 0
 
     def load_document(self, uploaded_file):
@@ -41,9 +37,7 @@ class DocumentProcessor:
         Extracts text content from a PDF file.
         """
         text = ""
-        # Create a PdfReader object to read the PDF content
         pdf_reader = PdfReader(uploaded_file)
-        # Iterate through each page and extract text
         for page in pdf_reader.pages:
             text += page.extract_text()
         return text
@@ -64,9 +58,7 @@ class DocumentProcessor:
         Returns the ISO 639-1 code of the detected language.
         """
         try:
-            # Use detect_langs to get a list of detected languages with confidence scores
             languages = detect_langs(text)
-            # Return the ISO code of the language with the highest confidence
             return languages[0].lang
         except Exception as e:
             st.warning(f"Could not detect language: {e}. Defaulting to English.")
@@ -76,6 +68,5 @@ class DocumentProcessor:
         """
         Splits the document content into smaller chunks using the initialized text splitter.
         """
-        # Split the text into chunks based on the configured chunk size and overlap
         chunks = self.text_splitter.split_text(document_content)
         return chunks
